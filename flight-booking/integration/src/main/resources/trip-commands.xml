@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * Copyright 2012 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<!-- <start id="main-message-flow-header"/> -->
+<beans:beans xmlns:beans="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/integration"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+			http://www.springframework.org/schema/beans/spring-beans.xsd
+			http://www.springframework.org/schema/integration
+			http://www.springframework.org/schema/integration/spring-integration.xsd
+			">
+    <!-- <end id="main-message-flow-header"/> -->
+
+    <!-- incoming posts from the trip UI end up here -->
+    <channel id="tripCommands"/>
+
+    <splitter id="tripCommandSplitter" expression="payload.subCommands"
+            input-channel="tripCommands" output-channel="javaLegQuoteCommands"/>
+    <!-- leg commands will be sent out for quotes -->
+
+    <!-- leg quotes will be aggregated back to trips -->
+    <channel id="legQuotes"/>
+
+    <aggregator id="legQuoteAggregator"
+                  input-channel="legQuotes" output-channel="tripQuotes">
+        <beans:bean class="siia.booking.integration.purchases.LegQuoteAggregator"/>
+    </aggregator>
+
+    <channel id="tripQuotes"/>
+
+</beans:beans>
