@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * Copyright 2012 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<beans:beans xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:mail="http://www.springframework.org/schema/integration/mail"
+             xmlns="http://www.springframework.org/schema/integration"
+             xmlns:context="http://www.springframework.org/schema/context"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+             http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+       http://www.springframework.org/schema/integration/mail http://www.springframework.org/schema/integration/mail/spring-integration-mail.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+   <context:component-scan base-package="siia.business"/>
+
+   <channel id="passengers"/>
+
+   <!-- The following configuration should be used with Spring Integration 2.0 and 2.1
+        due to https://jira.springsource.org/browse/INT-2275 -->
+   <chain id="passengerChain" input-channel="passengers" output-channel="flightDelays">
+        <transformer ref="passengerProfileEnricher"
+                     method="addProfileIfAvailable"/>
+       <mail:header-enricher>
+           <mail:to expression="payload?.profile?.emailAddress"/>
+       </mail:header-enricher>
+       <transformer ref="flightDelayEmailGenerator" method="generateEmail"/>
+    </chain>
+
+    <mail:outbound-channel-adapter id="flightDelays" mail-sender="mailSender"/>
+
+   <!--
+       With Spring Integration 2.2 and higher, you can chain the mail channel adapter
+       too - use this configuration instead!
+   -->
+   <!--
+      <chain id="passengerChain" input-channel="passengers">
+        <transformer ref="passengerProfileEnricher"
+                     method="addProfileIfAvailable"/>
+       <mail:header-enricher>
+           <mail:to expression="payload?.profile?.emailAddress"/>
+       </mail:header-enricher>
+       <transformer ref="flightDelayEmailGenerator" method="generateEmail"/>
+       <mail:outbound-channel-adapter mail-sender="mailSender"/>
+    </chain>
+   -->
+
+    <beans:bean id="mailSender" class="siia.business.StubMailSender"/>
+
+    <beans:bean class="siia.business.StubFlightScheduler"/>
+
+    <beans:bean class="siia.business.StubFrequentFlyerService"/>
+       
+</beans:beans>
