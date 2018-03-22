@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * Copyright 2012 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<beans:beans xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns="http://www.springframework.org/schema/integration"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <annotation-config/>
+
+    <channel id="bookingConfirmationRequests"/>
+    <service-activator input-channel="bookingConfirmationRequests"
+                       output-channel="chargedBookings"
+                       ref="billForBookingService" />
+
+
+    <channel id="chargedBookings">
+        <interceptors>
+            <beans:ref bean="auditInterceptor"/>
+        </interceptors>
+    </channel>
+
+    <service-activator input-channel="chargedBookings"
+                       output-channel="emailConfirmationRequests"
+                       ref="seatAvailabilityService" />
+
+
+    <channel id="emailConfirmationRequests" />
+    <outbound-channel-adapter channel="emailConfirmationRequests"
+                              ref="emailConfirmationService" />
+
+    <beans:bean id="billForBookingService" class="siia.channels.BillForBookingService"/>
+    <beans:bean id="seatAvailabilityService" class="siia.channels.SeatAvailabilityService"/>
+    <beans:bean id="emailConfirmationService" class="siia.channels.StubEmailConfirmationService"/>
+    <beans:bean id="customerPriorityComparator" class="siia.channels.CustomerPriorityComparator"/>
+    <beans:bean id="auditInterceptor"
+                class="siia.channels.ChannelAuditor">
+        <beans:property name="auditService" ref="auditService"/>
+    </beans:bean>
+    <beans:bean id="auditService" class="siia.channels.AuditService"/>
+
+</beans:beans>

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * Copyright 2012 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+
+<!--
+   NOTE: this example contains namespace definitions for both xmlns:ws and xmlns:stream
+   namespaces, although only one is intended to be used at a time.
+   Please feel free to add or remove the unused namespace definitions as necessary
+-->
+<beans:beans xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns="http://www.springframework.org/schema/integration"
+             xmlns:stream="http://www.springframework.org/schema/integration/stream"
+             xmlns:ws="http://www.springframework.org/schema/integration/ws"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+			http://www.springframework.org/schema/beans/spring-beans.xsd
+			http://www.springframework.org/schema/integration
+			http://www.springframework.org/schema/integration/spring-integration.xsd
+            http://www.springframework.org/schema/integration/ws
+			http://www.springframework.org/schema/integration/ws/spring-integration-ws.xsd
+			http://www.springframework.org/schema/integration/stream
+			http://www.springframework.org/schema/integration/stream/spring-integration-stream.xsd">
+
+    <beans:bean id="bookingDao"
+                class="siia.fundamentals.SimpleBookingDao"/>
+
+    <channel id="mealPreferenceUpdatesChannel"/>
+
+    <beans:bean id="bookingService"
+                class="siia.fundamentals.BookingService">
+        <beans:constructor-arg ref="bookingDao"/>
+    </beans:bean>
+
+    <service-activator input-channel="mealPreferenceUpdatesChannel"
+                       output-channel="bookingEnrichedMealUpdates"
+                       ref="bookingService"
+                       method="populatePreference"/>
+
+    <channel id="bookingEnrichedMealUpdates"/>
+
+    <beans:bean id="updateRequestTransformer"
+                class="siia.fundamentals.MealPreferenceRequestTransformer"/>
+
+    <service-activator input-channel="bookingEnrichedMealUpdates"
+                       output-channel="xmlMealUpdates"
+                       ref="updateRequestTransformer"
+                       method="buildMealPreferenceUpdateRequest"/>
+
+    <channel id="xmlMealUpdates"/>
+
+  <!--
+       This example uses a simplified version of the meal update action.
+        Instead of a web service invocation (as shown in the example
+        below, on the fictional service exposed at
+        http://example.com/mealupdates), we will use a stream channel
+         adapter which -sends the MealPreference objects to stdout -->
+
+    <!--<ws:outbound-gateway uri="http://example.com/mealupdates"
+                             request-channel="xmlMealUpdates" />-->
+
+    <stream:stdout-channel-adapter append-newline="true"
+                                   channel="xmlMealUpdates"/>
+
+</beans:beans>
